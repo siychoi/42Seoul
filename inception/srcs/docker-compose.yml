@@ -1,0 +1,65 @@
+volumes:
+  mariadb-volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Home/siychoi/data/mariadb
+  wordpress-volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Home/siychoi/data/wordpress
+
+services:
+  mariadb:
+    image: mariadb
+    build: ./requirements/mariadb/.
+    restart: always
+    expose:
+      - "3306"
+    networks:
+      - intra
+    volumes:
+      - mariadb-volume:/var/lib/mysql
+    tty: true
+    env_file:
+      - .env
+
+  nginx:
+    image: nginx
+    depends_on: 
+      - wordpress
+    build: ./requirements/nginx/.
+    restart: always
+    ports:
+      - "443:443"
+    volumes:
+      - wordpress-volume:/var/www/html
+    networks:
+      - intra
+    tty: true
+    env_file:
+      - .env
+
+  wordpress:
+    image: wordpress
+    depends_on:
+      - mariadb
+    container_name: wordpress
+    build: ./requirements/wordpress/.
+    restart: always
+    volumes:
+      - wordpress-volume:/var/www/html
+    expose: 
+      - "9000"
+    networks:
+      - intra
+    tty: true
+    env_file:
+      - .env
+
+networks:
+  intra:
+    driver: bridge

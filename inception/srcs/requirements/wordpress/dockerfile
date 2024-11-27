@@ -1,0 +1,31 @@
+FROM debian:bullseye
+
+EXPOSE 9000
+
+COPY ./tools/wordpress_init.sh /wordpress_init.sh
+
+RUN apt-get update
+RUN apt-get upgrade -y
+RUN apt-get install -y curl \
+    mariadb-client \
+    php7.4-fpm \
+    php-mysql \
+	php-cgi \
+	php-pdo \
+	php-gd \
+	php-cli \
+	php-mbstring \
+	dumb-init && \
+    curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
+    chmod +x wp-cli.phar && \
+    mv wp-cli.phar /usr/local/bin && \
+    mkdir -p /var/www/html /run/php && \
+    usermod -G www-data -a www-data && \
+    chown -R www-data:www-data /var/www/ && \
+    chmod +x wordpress_init.sh
+
+WORKDIR /var/www/html
+
+COPY ./conf/www.conf /etc/php/7.4/fpm/pool.d/www.conf
+
+ENTRYPOINT ["dumb-init", "--", "/wordpress_init.sh"]
